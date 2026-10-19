@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <!-- Faz a página se adaptar ao tamanho da tela (responsividade) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rick and Morty - Catálogo</title>
+
+  <!-- Bootstrap via CDN: grade e componentes prontos -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+  <header class="container py-4">
+    <h1>Rick and Morty</h1>
+  </header>
+
+  <main class="container">
+
+    <!-- NOVO: abas para separar os três recursos da API -->
+    <ul class="nav nav-tabs mb-4" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#abaPersonagens" type="button" role="tab">Personagens</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#abaEpisodios" type="button" role="tab">Episódios</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#abaLocais" type="button" role="tab">Locais</button>
+      </li>
+    </ul>
+
+    <div class="tab-content">
+
+      <!-- ABA 1: PERSONAGENS (/character) -->
+      <div class="tab-pane fade show active" id="abaPersonagens" role="tabpanel">
+        <form id="formPersonagem" class="row g-2 mb-4">
+          <div class="col-12 col-md-6">
+            <input type="text" id="campoNome" class="form-control" placeholder="Buscar por nome (ex.: rick)">
+          </div>
+          <div class="col-8 col-md-4">
+            <select id="campoStatus" class="form-select">
+              <option value="">Todos os status</option>
+              <option value="alive">Vivo</option>
+              <option value="dead">Morto</option>
+              <option value="unknown">Desconhecido</option>
+            </select>
+          </div>
+          <div class="col-4 col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Buscar</button>
+          </div>
+        </form>
+        <p id="msgPersonagens" class="text-muted"></p>
+        <div id="listaPersonagens" class="row g-3"></div>
+      </div>
+
+      <!-- ABA 2: EPISÓDIOS (/episode) -->
+      <div class="tab-pane fade" id="abaEpisodios" role="tabpanel">
+        <form id="formEpisodio" class="row g-2 mb-4">
+          <div class="col-12 col-md-5">
+            <input type="text" id="campoEpNome" class="form-control" placeholder="Nome do episódio (ex.: pilot)">
+          </div>
+          <div class="col-8 col-md-5">
+            <input type="text" id="campoEpCodigo" class="form-control" placeholder="Código ou temporada (ex.: S01 ou S02E03)">
+          </div>
+          <div class="col-4 col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Buscar</button>
+          </div>
+        </form>
+        <p id="msgEpisodios" class="text-muted"></p>
+        <!-- table-responsive faz a tabela rolar na horizontal em telas pequenas -->
+        <div class="table-responsive">
+          <table class="table table-striped align-middle">
+            <thead>
+              <tr><th>Código</th><th>Nome</th><th>Exibição</th><th>Personagens</th></tr>
+            </thead>
+            <tbody id="listaEpisodios"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ABA 3: LOCAIS (/location) -->
+      <div class="tab-pane fade" id="abaLocais" role="tabpanel">
+        <form id="formLocal" class="row g-2 mb-4">
+          <div class="col-12 col-md-5">
+            <input type="text" id="campoLocNome" class="form-control" placeholder="Nome do local (ex.: earth)">
+          </div>
+          <div class="col-8 col-md-5">
+            <input type="text" id="campoLocTipo" class="form-control" placeholder="Tipo (ex.: planet, space station)">
+          </div>
+          <div class="col-4 col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Buscar</button>
+          </div>
+        </form>
+        <p id="msgLocais" class="text-muted"></p>
+        <div id="listaLocais" class="row g-3"></div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Janela (modal) com o detalhe de UM personagem -->
+  <div class="modal fade" id="modalDetalhe" tabindex="-1" aria-labelledby="tituloDetalhe" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="tituloDetalhe">Detalhes</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body" id="corpoDetalhe"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rodapé exigido no enunciado -->
+  <footer class="container py-4 mt-4 border-top">
+    <small>Lucas Augusto Riva · Fundamentos ao Desenvolvimento Web</small>
+  </footer>
+
+  <!-- JavaScript do Bootstrap: necessário para o modal e as abas -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Nosso JavaScript, em arquivo separado -->
+  <script src="script.js"></script>
+</body>
+</html>

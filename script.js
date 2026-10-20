@@ -1,12 +1,141 @@
-
+// Endereço base da API
 const API = "https://rickandmortyapi.com/api";
 
+// Evita que um texto vindo da API seja interpretado como HTML
 function limpar(texto) {
   const div = document.createElement("div");
   div.textContent = texto ?? "";
   return div.innerHTML;
 }
 
+// ---------- API DE LOGS (Unoesc) ----------
+const LOG_API = "https://www.piway.com.br/unoesc/api";
+const MATRICULA = "467353";
+
+// Monta um trecho de URL seguro (a API recebe tudo na rota, então "/" e "?" quebrariam o endereço)
+function paraRota(valor) {
+  return encodeURIComponent(String(valor).replace(/[\/\\?#]/g, " ").trim());
+}
+
+// INSERIR log: chamada a cada consulta feita na API do Rick and Morty
+// api = nome da API, metodo = rota usada, resultado = alguma informação recebida
+async function registrarLog(api, metodo, resultado) {
+  try {
+    const url = LOG_API + "/inserir/log/" + paraRota(MATRICULA) + "/" +
+      paraRota(api) + "/" + paraRota(metodo) + "/" + paraRota(resultado);
+    await fetch(url);
+    // Se a aba de logs estiver aberta, atualiza a lista na hora
+    if (document.getElementById("abaLogs").classList.contains("active")) carregarLogs();
+  } catch (erro) {
+    console.warn("Não foi possível registrar o log:", erro);
+  }
+}
+
+// LISTAR logs do aluno
+const listaLogs = document.getElementById("listaLogs");
+const cabecalhoLogs = document.getElementById("cabecalhoLogs");
+const msgLogs = document.getElementById("msgLogs");
+
+// Descobre qual campo do log é o identificador (id, idlog, etc.)
+function campoId(objeto) {
+  if ("id" in objeto) return "id";
+  return Object.keys(objeto).find(function (k) { return /^id/i.test(k); });
+}
+
+// Matrícula que está sendo exibida na tabela (começa na minha)
+let matriculaAtual = MATRICULA;
+
+async function carregarLogs(matricula = matriculaAtual) {
+  matriculaAtual = matricula;
+  msgLogs.textContent = "Carregando...";
+  try {
+    const resposta = await fetch(LOG_API + "/logs/" + paraRota(matricula));
+    if (!resposta.ok) throw new Error("Erro HTTP " + resposta.status);
+    const texto = await resposta.text();
+
+    let logs;
+    try { logs = JSON.parse(texto); } catch (e) { logs = texto; }
+
+    // Quando a matrícula é inválida a API devolve uma mensagem de erro em vez do array
+    if (!Array.isArray(logs)) {
+      cabecalhoLogs.innerHTML = "";
+      listaLogs.innerHTML = "";
+      msgLogs.textContent = typeof logs === "string" ? logs : JSON.stringify(logs);
+      return;
+    }
+    if (logs.length === 0) {
+      cabecalhoLogs.innerHTML = "";
+      listaLogs.innerHTML = "";
+      msgLogs.textContent = "Nenhum log registrado ainda.";
+      return;
+    }
+
+    mostrarLogs(logs, matricula === MATRICULA);
+    msgLogs.textContent = logs.length + " logs da matrícula " + matricula;
+  } catch (erro) {
+    msgLogs.textContent = "Não foi possível carregar os logs: " + erro.message;
+  }
+}
+
+// EXIBIÇÃO COM REPETIÇÃO: uma linha para cada log (as colunas vêm dos campos que a API devolve)
+// ehMeu = true só quando a matrícula pesquisada é a minha (só nesse caso mostra o botão de excluir)
+function mostrarLogs(logs, ehMeu) {
+  const colunas = Object.keys(logs[0]);
+  const chaveId = campoId(logs[0]);
+
+  cabecalhoLogs.innerHTML = "<tr>" +
+    colunas.map(function (c) { return "<th>" + limpar(c) + "</th>"; }).join("") +
+    (ehMeu ? "<th>Ação</th>" : "") + "</tr>";
+
+  listaLogs.innerHTML = "";
+  logs.forEach(function (log) {
+    const celulas = colunas.map(function (c) { return "<td>" + limpar(log[c]) + "</td>"; }).join("");
+    const botao = chaveId && ehMeu
+      ? `<button type="button" class="btn btn-outline-danger btn-sm btn-excluir-log" data-id="${limpar(log[chaveId])}">Excluir</button>`
+      : "";
+    listaLogs.innerHTML += "<tr>" + celulas + (ehMeu ? "<td>" + botao + "</td>" : "") + "</tr>";
+  });
+}
+
+// EXCLUIR um log pelo id
+async function excluirLog(id) {
+  msgLogs.textContent = "Excluindo...";
+  try {
+    const resposta = await fetch(LOG_API + "/excluir/log/" + paraRota(id) + "/aluno/" + paraRota(MATRICULA));
+    if (!resposta.ok) throw new Error("Erro HTTP " + resposta.status);
+    await carregarLogs(MATRICULA);
+  } catch (erro) {
+    msgLogs.textContent = "Não foi possível excluir o log: " + erro.message;
+  }
+}
+
+listaLogs.addEventListener("click", function (evento) {
+  const botao = evento.target.closest(".btn-excluir-log");
+  if (botao) excluirLog(botao.dataset.id);
+});
+
+// PESQUISA por matrícula
+const campoMatricula = document.getElementById("campoMatricula");
+campoMatricula.value = MATRICULA;
+
+document.getElementById("formLogs").addEventListener("submit", function (e) {
+  e.preventDefault();
+  const matricula = campoMatricula.value.trim();
+  if (!/^\d+$/.test(matricula)) {
+    msgLogs.textContent = "Digite uma matrícula válida (somente números).";
+    return;
+  }
+  carregarLogs(matricula);
+});
+
+document.getElementById("btnMeusLogs").addEventListener("click", function () {
+  campoMatricula.value = MATRICULA;
+  carregarLogs(MATRICULA);
+});
+
+// NOVO: função única que faz TODAS as consultas à API.
+// recurso = "character", "episode" ou "location"
+// filtros = objeto, ex.: { name: "rick", status: "alive" } (campos vazios são ignorados)
 async function buscar(recurso, filtros = {}) {
   const params = new URLSearchParams();
   for (const campo in filtros) {
@@ -17,12 +146,17 @@ async function buscar(recurso, filtros = {}) {
 
   const resposta = await fetch(url);
 
+  // Quando a busca não acha nada, a API responde 404 (não é um erro de verdade)
   if (resposta.status === 404) return null;
   if (!resposta.ok) throw new Error("Erro HTTP " + resposta.status);
 
-  return await resposta.json();
+  const dados = await resposta.json();
+  // Registra na API de logs: qual rota foi usada e quantos resultados vieram
+  registrarLog("Rick and Morty", "/" + recurso, dados.info.count + " resultados");
+  return dados;
 }
 
+// ---------- MÉTODO 1: /character ----------
 const listaPersonagens = document.getElementById("listaPersonagens");
 const msgPersonagens = document.getElementById("msgPersonagens");
 
@@ -42,6 +176,7 @@ async function carregarPersonagens(nome = "", status = "") {
   }
 }
 
+// EXIBIÇÃO COM REPETIÇÃO: um card para cada personagem
 function mostrarPersonagens(personagens) {
   listaPersonagens.innerHTML = "";
   personagens.forEach(function (p) {
@@ -64,6 +199,7 @@ function mostrarPersonagens(personagens) {
   });
 }
 
+// EXIBIÇÃO SEM REPETIÇÃO: /character/{id}, os dados de UM personagem no modal
 const corpoDetalhe = document.getElementById("corpoDetalhe");
 const tituloDetalhe = document.getElementById("tituloDetalhe");
 
@@ -76,6 +212,7 @@ async function abrirDetalhe(id) {
     const resposta = await fetch(API + "/character/" + id);
     if (!resposta.ok) throw new Error("Erro HTTP " + resposta.status);
     const p = await resposta.json();
+    registrarLog("Rick and Morty", "/character/" + id, p.name);
 
     tituloDetalhe.textContent = p.name;
     corpoDetalhe.innerHTML = `
@@ -100,12 +237,14 @@ listaPersonagens.addEventListener("click", function (evento) {
   if (botao) abrirDetalhe(botao.dataset.id);
 });
 
+// ---------- MÉTODO 2: /episode ----------
 const listaEpisodios = document.getElementById("listaEpisodios");
 const msgEpisodios = document.getElementById("msgEpisodios");
 
 async function carregarEpisodios(nome = "", codigo = "") {
   msgEpisodios.textContent = "Carregando...";
   try {
+    // O filtro "episode" aceita temporada (S01) ou episódio exato (S01E01)
     const dados = await buscar("episode", { name: nome, episode: codigo });
     if (!dados) {
       listaEpisodios.innerHTML = "";
@@ -128,6 +267,7 @@ async function carregarEpisodios(nome = "", codigo = "") {
   }
 }
 
+// ---------- MÉTODO 3: /location ----------
 const listaLocais = document.getElementById("listaLocais");
 const msgLocais = document.getElementById("msgLocais");
 
@@ -162,6 +302,7 @@ async function carregarLocais(nome = "", tipo = "") {
   }
 }
 
+// ---------- Formulários ----------
 document.getElementById("formPersonagem").addEventListener("submit", function (e) {
   e.preventDefault();
   carregarPersonagens(
@@ -186,6 +327,10 @@ document.getElementById("formLocal").addEventListener("submit", function (e) {
   );
 });
 
+// Ao abrir a aba "Logs", busca a lista atualizada
+document.querySelector('[data-bs-target="#abaLogs"]').addEventListener("shown.bs.tab", function () { carregarLogs(); });
+
+// Ao abrir a página: as três listas gerais, sem filtro
 carregarPersonagens();
 carregarEpisodios();
 carregarLocais();

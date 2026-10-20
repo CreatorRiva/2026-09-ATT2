@@ -28,6 +28,9 @@
       <li class="nav-item" role="presentation">
         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#abaLocais" type="button" role="tab">Locais</button>
       </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#abaLogs" type="button" role="tab">Logs</button>
+      </li>
     </ul>
 
     <div class="tab-content">
@@ -94,6 +97,29 @@
         </form>
         <p id="msgLocais" class="text-muted"></p>
         <div id="listaLocais" class="row g-3"></div>
+      </div>
+
+      <!-- ABA 4: LOGS (API de registro de logs da Unoesc) -->
+      <div class="tab-pane fade" id="abaLogs" role="tabpanel">
+        <!-- Pesquisa de logs por matrícula -->
+        <form id="formLogs" class="row g-2 mb-4">
+          <div class="col-8 col-md-6">
+            <input type="text" id="campoMatricula" class="form-control" inputmode="numeric" placeholder="Pesquisar por matrícula (ex.: 467353)">
+          </div>
+          <div class="col-4 col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Buscar</button>
+          </div>
+          <div class="col-12 col-md-4">
+            <button type="button" id="btnMeusLogs" class="btn btn-outline-primary w-100">Ver meus logs</button>
+          </div>
+        </form>
+        <p id="msgLogs" class="text-muted"></p>
+        <div class="table-responsive">
+          <table class="table table-striped align-middle">
+            <thead id="cabecalhoLogs"></thead>
+            <tbody id="listaLogs"></tbody>
+          </table>
+        </div>
       </div>
 
     </div>
